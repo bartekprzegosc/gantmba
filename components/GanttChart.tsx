@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Subject } from '@/lib/supabase'
 
 function daysUntil(deadline: string): number {
@@ -31,6 +32,19 @@ interface Props {
 }
 
 export default function GanttChart({ subjects, onDelete, archived = false }: Props) {
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
+  function handleDeleteClick(id: string) {
+    setConfirmId(id)
+  }
+
+  function handleConfirm() {
+    if (confirmId) {
+      onDelete(confirmId)
+      setConfirmId(null)
+    }
+  }
+
   if (subjects.length === 0) {
     return (
       <div className="text-center py-16 text-stone-400 text-sm">
@@ -104,11 +118,11 @@ export default function GanttChart({ subjects, onDelete, archived = false }: Pro
                   </span>
                   {!archived && (
                     <button
-                      onClick={() => onDelete(subject.id)}
-                      className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-400 transition-opacity text-xs ml-1"
+                      onClick={() => handleDeleteClick(subject.id)}
+                      className="shrink-0 text-stone-300 hover:text-red-400 hover:bg-red-50 transition-colors text-xs ml-1 w-5 h-5 rounded flex items-center justify-center"
                       title="Usuń"
                     >
-                      ✕
+                      🗑
                     </button>
                   )}
                 </div>
@@ -167,6 +181,33 @@ export default function GanttChart({ subjects, onDelete, archived = false }: Pro
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-400 inline-block" /> mniej niż 7 dni</span>
         </div>
       </div>
+
+      {/* Confirmation dialog */}
+      {confirmId && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 text-center">
+            <div className="text-3xl mb-3">🗑</div>
+            <h3 className="text-base font-semibold text-stone-800 mb-1">Usuń deadline?</h3>
+            <p className="text-sm text-stone-500 mb-5">
+              {subjects.find(s => s.id === confirmId)?.name} — tej operacji nie można cofnąć.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmId(null)}
+                className="flex-1 border border-stone-200 rounded-xl py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm rounded-xl py-2 transition-colors"
+              >
+                Usuń
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
