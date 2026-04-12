@@ -5,9 +5,10 @@ import { useState } from 'react'
 interface Props {
   onCreated: () => void
   onClose: () => void
+  groupId?: string
 }
 
-export default function NewSemesterModal({ onCreated, onClose }: Props) {
+export default function NewSemesterModal({ onCreated, onClose, groupId }: Props) {
   const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -23,7 +24,7 @@ export default function NewSemesterModal({ onCreated, onClose }: Props) {
       const res = await fetch('/api/semesters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), start_date: startDate, end_date: endDate }),
+        body: JSON.stringify({ name: name.trim(), start_date: startDate, end_date: endDate, group_id: groupId ?? 'default' }),
       })
       if (!res.ok) throw new Error('Błąd')
       onCreated()

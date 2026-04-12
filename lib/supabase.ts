@@ -11,6 +11,7 @@ export type Semester = {
   start_date: string
   end_date: string
   archived: boolean
+  group_id: string
   created_at: string
 }
 
