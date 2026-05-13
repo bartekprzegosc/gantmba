@@ -22,7 +22,8 @@ export default function GrupaPage({ params }: Props) {
   const [showArchive, setShowArchive] = useState(false)
   const [archiveSemesters, setArchiveSemesters] = useState<Semester[]>([])
   const [archiveSubjects, setArchiveSubjects] = useState<Record<string, Subject[]>>({})
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
+  const [copied, setCopied]     = useState(false)
 
   const fetchSemesters = useCallback(async () => {
     const res = await fetch(`/api/semesters?group_id=${groupId}`)
@@ -82,6 +83,48 @@ export default function GrupaPage({ params }: Props) {
 
   const archivedCount = semesters.filter(s => s.archived).length
 
+  const MONTHS_PL = [
+    'stycznia','lutego','marca','kwietnia','maja','czerwca',
+    'lipca','sierpnia','września','października','listopada','grudnia',
+  ]
+
+  function generateReminder() {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const upcoming = subjects
+      .map(s => ({ ...s, date: new Date(s.deadline + 'T00:00:00') }))
+      .filter(s => s.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+
+    if (upcoming.length === 0) return null
+
+    const lines = upcoming.map(s => {
+      const days = Math.round((s.date.getTime() - today.getTime()) / 86_400_000)
+      const dateStr = `${s.date.getDate()} ${MONTHS_PL[s.date.getMonth()]}`
+      const daysStr = days === 0 ? 'dziś!' : days === 1 ? 'za 1 dzień' : `za ${days} dni`
+      return ` ${s.name}: ${dateStr} (${daysStr})`
+    })
+
+    return [
+      'Cześć, szybka przypominajka. W najbliższym czasie do zaliczenia i oddania mamy następujące rzeczy:',
+      '',
+      ...lines,
+      '',
+      'Pozdrawiam,',
+      'Jarvis z GantMBA.vercel.app',
+    ].join('\n')
+  }
+
+  function handleCopyReminder() {
+    const text = generateReminder()
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    })
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -117,6 +160,18 @@ export default function GrupaPage({ params }: Props) {
                 className="text-xs text-stone-500 hover:text-stone-700 border border-stone-200 rounded-lg px-3 py-1.5 transition-colors"
               >
                 Archiwizuj semestr
+              </button>
+            )}
+            {activeSemester && subjects.length > 0 && (
+              <button
+                onClick={handleCopyReminder}
+                className={`text-xs rounded-lg px-3 py-1.5 transition-colors font-medium border ${
+                  copied
+                    ? 'bg-green-50 border-green-300 text-green-700'
+                    : 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                {copied ? '✓ Skopiowano!' : '📋 Kopiuj przypominajkę'}
               </button>
             )}
             <button
